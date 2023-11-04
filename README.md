@@ -85,6 +85,38 @@ $ scripts/run_dev.sh <optional path>
 
 You can either provide an optional path to mirror in your host ROS workspace with Isaac ROS packages, which will be made available in the container as `/workspaces/isaac_ros-dev`, or you can set up a new workspace in the container.
 
+### Docker build notes
+1) You will need to reference the runtime nvidia container on the docker run command. Also for apriltags it is required to pass the device name to the docker container. Additionally it is easier to bind a host workspace with all the ros packages (including isaac ros repos). I have had to add the cuda libs as binds due to them not being included in the docker file. Here is an example docker run command:
+
+'sudo docker run --runtime nvidia --rm --privileged --net=host -v /tmp/.X11-unix/:/tmp/.X11-unix/ -v /home/dirksavage/workspaces/isaac_ros-dev/:/workspaces/isaac_ros-dev/ -v /usr/local/cuda-10.2/targets/aarch64-linux/lib/:/usr/local/cuda-10.2/targets/aarch64-linux/lib/ -v /tmp/argus_socket:/tmp/argus_socket -v /usr/src/jetson_multimedia_api/:/usr/src/jetson_multimedia_api/ --device /dev/video0 -e DISPLAY=$DISPLAY -it apriltag_accelerated:v2 /bin/bash'
+
+notice jetson_multimedia bind. You will need to install it on host with 'sudo apt install nvidia-l4t-jetson-multimedia-api'
+
+2) I don't remember why argus socket bind is required, but without it I think running the argus camera node failed. Here is an example to run argus with a raspberry pi cam:
+
+'ros2 run isaac_ros_argus_camera_mono isaac_ros_argus_camera_mono --ros-args -r /image_raw:=/image_rect -p device:=0 -p sensor:=4 -p output_encoding:=mono8 -p camera_info_url:=file:///workspaces/isaac_ros-dev/ros_ws/isaac_ros_apriltag/config/rpi_cam.yaml'
+
+3) Another dependency is nvidia-cudnn8. This is needed for the camera_calibration node. On the host install with 'sudo apt install nvidia-cudnn8', and the cuda libs should be found by binding the libs workspaces in the docker run example above
+
+4) In your binded ros2 workspace, you may find target export name errors, see the following for a fix:
+'cd ros_ws'
+'sudo chown -R admin:admin .'
+
+5) If you get cmake rosidl_generate_interfaces errors, you may need to switch which python version via update alternatives:
+
+solved by setting update-alternatives "sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.6 2"
+
+"sudo update-alternatives --install /usr/bin/python python /usr/bin/python2 1"
+
+"sudo update-alternatives --config python"
+
+6) For VSLAM if you have colcon build errors with vlsam or nvengine interfaces, you need to change an underlay regex in ament_cmake_export_targets-extras.cmake.in > this file is in /opt/ros/foxy/install/share/ament_cmake_export_targets/cmake
+
+   change line 12 to:  set(_regex "foreach\\((_cmake)?_expected_?[Tt]arget (IN ITEMS )?(.+)\\)")
+   change line  21 to: string(REGEX REPLACE "${_regex}" "\\3" _targets "${_foreach_targets}")'
+
+   reference: https://github.com/ament/ament_cmake/commit/11c44dbd646846a2e8ca912155f0704e9b0c3c57
+
 ### Package Dependencies
 - [isaac_ros_common](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common)
 - [isaac_ros_image_pipeline](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_image_pipeline)
