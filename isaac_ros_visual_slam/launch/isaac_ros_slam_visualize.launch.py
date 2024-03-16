@@ -18,18 +18,25 @@ def generate_launch_description():
         package='isaac_ros_visual_slam',
         plugin='isaac_ros::visual_slam::VisualSlamNode',
         parameters=[{
-                    'input_base_frame': 'input_base_frame',
+                    'map_frame': 'map',
+                    'odom_frame': 'odom',
+                    'input_base_frame': 'camera_link',
                     'publish_tf': True,
                     'enable_rectified_pose': True,
-                    'denoise_input_images': False,
+                    'denoise_input_images': True,
                     'rectified_images': False,
                     'enable_debug_mode': False,
                     'enable_imu': True,
                     'debug_dump_path': '/tmp/elbrus',
                     'input_imu_frame': 'imu',
-                    'path_max_size': 4000,
                     'enable_slam_visualization': True,
                     'enable_landmarks_view': True,
+                    'enable_observations_view': True,
+                    'gyro_noise_density': 0.001,
+                    'gyro_random_walk': 0.000019393,
+                    'accel_noise_density': 0.003,
+                    'calibration_frequency': 100.0,
+                    'img_jitter_threshold_ms': 22.00
                     }]
     )
 
